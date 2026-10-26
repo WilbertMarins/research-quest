@@ -45,6 +45,14 @@ tests/
 5. Não avance para a próxima atividade enquanto os critérios da atual não estiverem atendidos.
 6. Registre decisões arquiteturais relevantes em `research-quest-specs/decisions/`.
 
+## Inicialização com Docker
+
+```bash
+docker compose up --build
+```
+
+A API fica disponível em `http://localhost:8000` e o frontend em `http://localhost:3000`. O PostgreSQL/pgvector será incorporado no próximo incremento da fundação.
+
 ## Política de trabalho
 
 - Preferir commits lógicos com **500 linhas alteradas ou menos**.
