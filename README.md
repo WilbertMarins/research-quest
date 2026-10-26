@@ -1,4 +1,4 @@
-# Research Quest — SDD
+# Research Quest — MVP orientado a especificações
 
 Especificações de produto e implementação para a PoC **Research Quest**.
 
@@ -6,15 +6,19 @@ Especificações de produto e implementação para a PoC **Research Quest**.
 
 Construir uma aplicação em que uma pessoa envia documentos e perguntas, um agente com RAG produz respostas fundamentadas em fontes, e a interface acompanha o ciclo de vida da tarefa.
 
-## Stack proposta
+## Estado atual
+
+A fundação contém API FastAPI com health check, configuração validada, frontend Next.js inicial, Docker Compose, PostgreSQL 18 com pgvector e migrações Alembic. Ingestão, busca, agente e tarefas ainda serão implementados.
+
+## Stack do MVP
 
 - Python 3.12+
 - FastAPI para API HTTP
 - LangGraph para o fluxo do agente
 - LangChain para integrações de LLM, embeddings e retrievers
 - PostgreSQL com pgvector para persistência e busca vetorial
-- Celery + RabbitMQ para execução assíncrona
-- Langfuse para observabilidade
+- Executor em background com contrato preparado para Celery + RabbitMQ
+- Logs correlacionados; Langfuse é secundário
 - Next.js + TypeScript para interface
 - Docker Compose para ambiente local
 - pytest para testes
@@ -38,12 +42,28 @@ tests/
 
 ## Como usar estas specs
 
-1. Leia `research-quest-specs/specs/00-foundation/spec.md`.
-2. Revise `research-quest-specs/specs/00-foundation/design.md`.
-3. Execute as tarefas de `research-quest-specs/specs/00-foundation/tasks.md` em ordem.
+1. Leia `research-quest-specs/specs/10-mvp-delivery/spec.md`.
+2. Revise `research-quest-specs/specs/10-mvp-delivery/design.md`.
+3. Execute as tarefas de `research-quest-specs/specs/10-mvp-delivery/tasks.md` em ordem.
 4. Para cada atividade, implemente apenas o escopo definido e revise o diff sem executar testes.
 5. Não avance para a próxima atividade enquanto os critérios da atual não estiverem atendidos.
 6. Registre decisões arquiteturais relevantes em `research-quest-specs/decisions/`.
+
+## Pré-requisitos
+
+- Docker com Compose.
+- Para desenvolvimento fora dos containers: Python 3.12 e `uv`.
+- Para desenvolvimento do frontend fora dos containers: Node.js 20.9 ou superior e npm.
+
+## Configuração local
+
+Crie o arquivo local de ambiente sem versioná-lo:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Em Linux ou macOS, use `cp .env.example .env`. As credenciais do exemplo servem somente para desenvolvimento local. Preencha `GROQ_API_KEY` antes de usar geração real de respostas.
 
 ## Inicialização com Docker
 
@@ -52,6 +72,52 @@ docker compose up --build
 ```
 
 A API fica disponível em `http://localhost:8000`, o frontend em `http://localhost:3000` e o PostgreSQL/pgvector em `localhost:5432`. Credenciais padrão são apenas locais e podem ser substituídas no `.env`.
+
+O container da API aplica migrações pendentes antes de iniciar. Para encerrar os serviços sem remover os dados persistidos:
+
+```bash
+docker compose down
+```
+
+## Desenvolvimento sem containers de aplicação
+
+Mantenha o PostgreSQL disponível e inicie a API na raiz:
+
+```bash
+uv sync --dev
+uv run alembic upgrade head
+uv run fastapi dev apps/api/src/research_quest_api/main.py
+```
+
+Em outro terminal, inicie o frontend:
+
+```bash
+cd apps/web
+npm ci
+npm run dev
+```
+
+## Migrações
+
+Crie uma revisão somente depois de alterar os modelos persistentes:
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
+uv run alembic upgrade head
+```
+
+Não edite uma migração que já tenha sido aplicada em ambientes compartilhados; crie uma nova revisão.
+
+## Testes — apenas referência
+
+Os testes são criados com cada incremento, mas não são executados automaticamente neste fluxo. Os comandos previstos são:
+
+```bash
+uv run pytest
+cd apps/web && npm test
+```
+
+Até que haja uma execução manual registrada, o estado da suíte deve ser considerado **não executado**, nunca aprovado implicitamente.
 
 ## Política de trabalho
 
@@ -64,18 +130,18 @@ A API fica disponível em `http://localhost:8000`, o frontend em `http://localho
 - Não fazer chamadas reais a provedores de LLM nos testes unitários.
 - Usar mocks/fakes nos testes e reservar integrações reais para testes explicitamente configurados.
 
-## Ordem de implementação sugerida
+## Ordem de implementação do MVP
 
 1. Fundação, configuração e ambiente local.
-2. Modelo e API de tarefas.
-3. Ingestão de documentos.
-4. Busca vetorial.
-5. Grafo de agente e resposta fundamentada.
-6. Execução assíncrona e resiliência.
-7. Observabilidade.
-8. Atualizações ao vivo no frontend.
-9. Interface gamificada.
-10. Testes ponta a ponta e documentação.
+2. Ingestão de documentos e chunking.
+3. Embeddings locais e busca vetorial.
+4. Modelo, API e seleção de documentos das tarefas.
+5. Grafo do agente e resposta fundamentada via Groq.
+6. Execução em background e estados persistidos.
+7. Interface para upload, pergunta, polling, fontes e histórico.
+8. Cobertura automatizada não executada e documentação final.
+
+SSE, Langfuse, Celery/RabbitMQ e pixel art entram depois do fluxo vertical, desde que não comprometam a entrega do MVP.
 
 ## Escopo da primeira PoC
 
