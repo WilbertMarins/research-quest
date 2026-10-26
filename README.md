@@ -19,6 +19,23 @@ Construir uma aplicação em que uma pessoa envia documentos e perguntas, um age
 - Docker Compose para ambiente local
 - pytest para testes
 
+## Estrutura do monorepo
+
+```text
+apps/
+├── api/                 # FastAPI e casos de uso
+└── web/                 # Next.js e interface
+infra/
+└── docker/              # Arquivos auxiliares de containers
+migrations/              # Migrações PostgreSQL/pgvector
+packages/
+└── contracts/           # Contratos compartilhados entre API e frontend
+tests/
+├── unit/
+├── integration/
+└── e2e/
+```
+
 ## Como usar estas specs
 
 1. Leia `research-quest-specs/specs/00-foundation/spec.md`.
