@@ -51,7 +51,7 @@ tests/
 docker compose up --build
 ```
 
-A API fica disponível em `http://localhost:8000` e o frontend em `http://localhost:3000`. O PostgreSQL/pgvector será incorporado no próximo incremento da fundação.
+A API fica disponível em `http://localhost:8000`, o frontend em `http://localhost:3000` e o PostgreSQL/pgvector em `localhost:5432`. Credenciais padrão são apenas locais e podem ser substituídas no `.env`.
 
 ## Política de trabalho
 
