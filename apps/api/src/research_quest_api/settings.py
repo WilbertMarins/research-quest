@@ -22,9 +22,7 @@ class Settings(BaseSettings):
     groq_api_key: SecretStr | None = None
     groq_model: str = "openai/gpt-oss-20b"
 
-    embedding_model: str = (
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    )
+    embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     embedding_dimension: int = Field(default=384, gt=0)
 
     max_upload_bytes: int = Field(default=2 * 1024 * 1024, gt=0)
