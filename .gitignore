@@ -1,0 +1,35 @@
+# Especificações locais (somente referência; não versionar)
+/research-quest-specs/
+
+# Variáveis de ambiente e segredos locais
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+coverage/
+
+# Builds e arquivos temporários
+build/
+dist/
+*.log
+tmp/
+temp/
+
+# IDE e sistema operacional
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
