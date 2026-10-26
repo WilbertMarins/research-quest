@@ -21,6 +21,8 @@ A fundação contém API FastAPI com health check, configuração validada, fron
 - Logs correlacionados; Langfuse é secundário
 - Next.js + TypeScript para interface
 - Docker Compose para ambiente local
+- GNU Make para atalhos de desenvolvimento
+- Ruff para lint e formatação do código Python
 - pytest para testes
 
 ## Estrutura do monorepo
@@ -52,6 +54,7 @@ tests/
 ## Pré-requisitos
 
 - Docker com Compose.
+- GNU Make.
 - Para desenvolvimento fora dos containers: Python 3.12 e `uv`.
 - Para desenvolvimento do frontend fora dos containers: Node.js 20.9 ou superior e npm.
 
@@ -67,24 +70,40 @@ Em Linux ou macOS, use `cp .env.example .env`. As credenciais do exemplo servem 
 
 ## Inicialização com Docker
 
+Para subir PostgreSQL, API e frontend juntos, com os logs no terminal:
+
 ```bash
-docker compose up --build
+make up
 ```
 
 A API fica disponível em `http://localhost:8000`, o frontend em `http://localhost:3000` e o PostgreSQL/pgvector em `localhost:5432`. Credenciais padrão são apenas locais e podem ser substituídas no `.env`.
 
-O container da API aplica migrações pendentes antes de iniciar. Para encerrar os serviços sem remover os dados persistidos:
+O container da API aplica migrações pendentes antes de iniciar. Para executar em segundo plano ou encerrar os serviços sem remover os dados persistidos:
 
 ```bash
-docker compose down
+make start
+make down
 ```
+
+Outros atalhos disponíveis:
+
+```bash
+make help       # lista todos os comandos
+make build      # constrói as imagens
+make logs       # acompanha os logs
+make ps         # mostra o estado dos serviços
+make restart    # reinicia o ambiente em segundo plano
+make migrate    # aplica as migrações pelo container da API
+```
+
+Os comandos `make up` e `make start` incluem os três serviços definidos no Compose: PostgreSQL, API e web.
 
 ## Desenvolvimento sem containers de aplicação
 
 Mantenha o PostgreSQL disponível e inicie a API na raiz:
 
 ```bash
-uv sync --dev
+make install
 uv run alembic upgrade head
 uv run fastapi dev apps/api/src/research_quest_api/main.py
 ```
@@ -92,9 +111,7 @@ uv run fastapi dev apps/api/src/research_quest_api/main.py
 Em outro terminal, inicie o frontend:
 
 ```bash
-cd apps/web
-npm ci
-npm run dev
+npm --prefix apps/web run dev
 ```
 
 ## Migrações
@@ -107,6 +124,18 @@ uv run alembic upgrade head
 ```
 
 Não edite uma migração que já tenha sido aplicada em ambientes compartilhados; crie uma nova revisão.
+
+## Qualidade do código Python com Ruff
+
+Ruff é usado como linter e formatador. Os comandos são sempre manuais e não executam testes:
+
+```bash
+make lint          # equivale a: uv run ruff check .
+make format-check  # equivale a: uv run ruff format --check .
+make format        # equivale a: uv run ruff format .
+```
+
+`make format` altera os arquivos Python; `make lint` e `make format-check` apenas verificam.
 
 ## Testes — apenas referência
 
