@@ -10,6 +10,8 @@ Na raiz do repositório, instale as dependências:
 uv sync --dev
 ```
 
+Copie `.env.example` para `.env` e preencha apenas os valores locais necessários. O health check não exige uma chave Groq; a chave é validada quando uma geração real é solicitada.
+
 Inicie a API:
 
 ```bash
