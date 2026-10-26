@@ -5,7 +5,7 @@ WEB_DIR := apps/web
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install up start down restart logs ps build migrate lint format format-check
+.PHONY: help install up start down restart logs ps build migrate lint format format-check typecheck web-build ci ci-act ci-act-list
 
 help:
 	@echo "make install       Instala as dependencias locais da API e da web"
@@ -20,6 +20,11 @@ help:
 	@echo "make lint          Verifica o codigo Python com Ruff"
 	@echo "make format        Formata o codigo Python com Ruff"
 	@echo "make format-check  Verifica a formatacao sem alterar arquivos"
+	@echo "make typecheck     Verifica os tipos do frontend"
+	@echo "make web-build     Valida o build de producao do frontend"
+	@echo "make ci            Executa localmente as mesmas etapas da CI"
+	@echo "make ci-act        Executa o workflow do GitHub Actions com act"
+	@echo "make ci-act-list   Lista os jobs reconhecidos pelo act"
 
 install:
 	$(UV) sync --dev
@@ -56,3 +61,23 @@ format:
 
 format-check:
 	$(UV) run ruff format --check .
+
+typecheck:
+	$(NPM) --prefix $(WEB_DIR) run typecheck
+
+web-build:
+	$(NPM) --prefix $(WEB_DIR) run build
+
+ci:
+	$(UV) sync --locked --dev
+	$(UV) run ruff check .
+	$(UV) run ruff format --check .
+	$(NPM) --prefix $(WEB_DIR) ci
+	$(NPM) --prefix $(WEB_DIR) run typecheck
+	$(NPM) --prefix $(WEB_DIR) run build
+
+ci-act:
+	act pull_request --workflows .github/workflows/ci.yml
+
+ci-act-list:
+	act pull_request --list --workflows .github/workflows/ci.yml

@@ -94,6 +94,7 @@ make logs       # acompanha os logs
 make ps         # mostra o estado dos serviços
 make restart    # reinicia o ambiente em segundo plano
 make migrate    # aplica as migrações pelo container da API
+make ci         # executa localmente as verificações da CI
 ```
 
 Os comandos `make up` e `make start` incluem os três serviços definidos no Compose: PostgreSQL, API e web.
@@ -136,6 +137,37 @@ make format        # equivale a: uv run ruff format .
 ```
 
 `make format` altera os arquivos Python; `make lint` e `make format-check` apenas verificam.
+
+## Integração contínua com GitHub Actions
+
+O workflow `.github/workflows/ci.yml` é executado em pull requests, pushes para `main` e acionamentos manuais. Ele instala versões fixas de Python, `uv` e Node.js e então executa `make ci`, que verifica:
+
+- lint e formatação do Python com Ruff;
+- tipos do frontend com TypeScript;
+- build de produção do frontend.
+
+As suítes `pytest` e Vitest não fazem parte da CI enquanto vigorar a regra de não executar testes automaticamente.
+
+Para executar exatamente os comandos de qualidade e build antes de enviar ao GitHub:
+
+```bash
+make ci
+```
+
+Para simular o próprio workflow localmente, instale o [`act`](https://nektosact.com/installation/) e mantenha o Docker em execução. No Windows:
+
+```powershell
+winget install nektos.act
+```
+
+Depois, liste os jobs ou execute o evento de pull request com logs no terminal:
+
+```bash
+make ci-act-list
+make ci-act
+```
+
+Os comandos equivalentes são `act pull_request --list --workflows .github/workflows/ci.yml` e `act pull_request --workflows .github/workflows/ci.yml`. A simulação do `act` é útil, mas não é idêntica aos runners hospedados pelo GitHub; a confirmação definitiva continuará aparecendo na aba **Actions** do repositório após o push.
 
 ## Testes — apenas referência
 
