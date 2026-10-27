@@ -3,6 +3,10 @@ from research_quest_api.documents.chunking import (
     TextChunk,
     split_text,
 )
+from research_quest_api.documents.indexing import (
+    DocumentIndexer,
+    DocumentIndexingError,
+)
 from research_quest_api.documents.storage import (
     DocumentStorage,
     StoreDocumentResult,
@@ -17,6 +21,8 @@ from research_quest_api.documents.validation import (
 __all__ = [
     "ChunkLimitExceededError",
     "DocumentStorage",
+    "DocumentIndexer",
+    "DocumentIndexingError",
     "DocumentValidationError",
     "StoreDocumentResult",
     "TextChunk",
