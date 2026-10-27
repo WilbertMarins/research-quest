@@ -1,3 +1,8 @@
+from research_quest_api.documents.chunking import (
+    ChunkLimitExceededError,
+    TextChunk,
+    split_text,
+)
 from research_quest_api.documents.storage import (
     DocumentStorage,
     StoreDocumentResult,
@@ -10,10 +15,13 @@ from research_quest_api.documents.validation import (
 )
 
 __all__ = [
+    "ChunkLimitExceededError",
     "DocumentStorage",
     "DocumentValidationError",
     "StoreDocumentResult",
+    "TextChunk",
     "ValidatedDocument",
     "calculate_content_hash",
+    "split_text",
     "validate_document",
 ]
