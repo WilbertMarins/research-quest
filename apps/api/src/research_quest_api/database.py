@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -15,3 +17,8 @@ def create_database_engine(database_url: str | None = None) -> Engine:
 
 engine = create_database_engine()
 SessionLocal = sessionmaker(bind=engine, class_=Session, expire_on_commit=False)
+
+
+def get_session() -> Iterator[Session]:
+    with SessionLocal() as session:
+        yield session
