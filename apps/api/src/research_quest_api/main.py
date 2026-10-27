@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from research_quest_api.documents.router import router as documents_router
 from research_quest_api.settings import get_settings
+from research_quest_api.tasks.router import router as tasks_router
 
 settings = get_settings()
 
@@ -12,6 +13,7 @@ app = FastAPI(
 
 app.state.settings = settings
 app.include_router(documents_router)
+app.include_router(tasks_router)
 
 
 @app.get("/health", tags=["health"])
