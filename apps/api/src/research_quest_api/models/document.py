@@ -2,7 +2,16 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, Enum, String, Text, func
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    Enum,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from research_quest_api.database import Base
@@ -29,11 +38,12 @@ class Document(Base):
     __tablename__ = "documents"
     __table_args__ = (
         CheckConstraint("size_bytes >= 0", name="ck_documents_size_bytes_nonnegative"),
+        UniqueConstraint("content_hash", name="uq_documents_content_hash"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     filename: Mapped[str] = mapped_column(String(255))
-    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+    content_hash: Mapped[str] = mapped_column(String(64))
     mime_type: Mapped[str] = mapped_column(String(100))
     size_bytes: Mapped[int] = mapped_column(BigInteger)
     content: Mapped[str] = mapped_column(Text)
