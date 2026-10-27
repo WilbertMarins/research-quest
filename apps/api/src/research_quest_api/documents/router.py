@@ -17,7 +17,7 @@ from research_quest_api.documents.indexing import (
     DocumentIndexer,
     DocumentIndexingError,
 )
-from research_quest_api.documents.schemas import DocumentResponse
+from research_quest_api.documents.schemas import ApiErrorResponse, DocumentResponse
 from research_quest_api.documents.storage import DocumentStorage
 from research_quest_api.documents.validation import (
     DocumentValidationError,
@@ -37,7 +37,29 @@ VALIDATION_STATUS_CODES = {
 }
 
 
-@router.post("", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=DocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload and index a text document",
+    description=(
+        "Accepts UTF-8 TXT or Markdown, deduplicates by content, creates chunks "
+        "and generates local embeddings. The original content is not returned."
+    ),
+    responses={
+        200: {
+            "model": DocumentResponse,
+            "description": "Identical content already exists.",
+        },
+        413: {"model": ApiErrorResponse, "description": "Upload is too large."},
+        415: {"model": ApiErrorResponse, "description": "Unsupported format."},
+        422: {"model": ApiErrorResponse, "description": "Invalid text content."},
+        503: {
+            "model": ApiErrorResponse,
+            "description": "Local embedding generation failed.",
+        },
+    },
+)
 async def upload_document(
     response: Response,
     file: Annotated[UploadFile, File()],

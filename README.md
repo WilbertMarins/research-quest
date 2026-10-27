@@ -8,7 +8,7 @@ Construir uma aplicação em que uma pessoa envia documentos e perguntas, um age
 
 ## Estado atual
 
-A fundação contém API FastAPI com health check, configuração validada, frontend Next.js inicial, Docker Compose, PostgreSQL 18 com pgvector e migrações Alembic. Ingestão, busca, agente e tarefas ainda serão implementados.
+A fundação e a ingestão vertical estão implementadas: a API recebe TXT/MD, valida, deduplica, cria chunks e persiste embeddings locais no PostgreSQL/pgvector. Busca, agente, tarefas e interface integrada ainda serão implementados.
 
 ## Stack do MVP
 
@@ -114,6 +114,30 @@ Em outro terminal, inicie o frontend:
 ```bash
 npm --prefix apps/web run dev
 ```
+
+## Upload e indexação de documentos
+
+Envie um arquivo como `multipart/form-data` no campo `file`:
+
+```bash
+curl -X POST http://localhost:8000/api/documents \
+  -F "file=@notes.md;type=text/markdown"
+```
+
+Formatos aceitos: `.txt` com `text/plain` e `.md` com `text/markdown` ou `text/plain`. O conteúdo deve ser UTF-8, não pode conter somente espaços e deve respeitar `MAX_UPLOAD_BYTES` — 2 MiB por padrão.
+
+Um documento novo retorna HTTP `201`, estado `completed`, quantidade de chunks e `created: true`. Conteúdo idêntico é detectado por SHA-256 e retorna o registro existente com HTTP `200` e `created: false`; o conteúdo integral nunca aparece na resposta.
+
+Erros públicos possíveis:
+
+- `413 file_too_large`: arquivo acima do limite configurado;
+- `415 unsupported_extension` ou `unsupported_media_type`: formato não aceito;
+- `422 invalid_encoding`, `empty_document` ou `chunk_limit_exceeded`;
+- `503 embedding_failed`: falha sanitizada ao gerar embeddings locais.
+
+O primeiro upload pode baixar o modelo configurado em `EMBEDDING_MODEL`. O MVP utiliza `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, vetores de 384 dimensões e PyTorch CPU-only. Trocar modelo ou dimensão exige reindexação explícita; não altere apenas `EMBEDDING_DIMENSION` em uma base existente.
+
+O contrato interativo fica disponível em `http://localhost:8000/docs`.
 
 ## Migrações
 
