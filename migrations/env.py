@@ -3,7 +3,8 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import Connection
 
-from research_quest_api.database import Base, create_database_engine
+from research_quest_api.database import create_database_engine
+from research_quest_api.models import Document
 from research_quest_api.settings import get_settings
 
 config = context.config
@@ -11,7 +12,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = Document.metadata
 
 
 def run_migrations_offline() -> None:
