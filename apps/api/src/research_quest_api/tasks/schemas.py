@@ -57,9 +57,7 @@ class TaskResponse(BaseModel):
     created_at: datetime = Field(description="UTC creation timestamp.")
     updated_at: datetime = Field(description="UTC last-update timestamp.")
     started_at: datetime | None = Field(description="UTC execution start timestamp.")
-    finished_at: datetime | None = Field(
-        description="UTC terminal-state timestamp."
-    )
+    finished_at: datetime | None = Field(description="UTC terminal-state timestamp.")
 
 
 class TaskListResponse(BaseModel):

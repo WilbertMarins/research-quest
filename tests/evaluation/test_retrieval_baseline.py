@@ -30,9 +30,7 @@ def test_configured_embedding_model_retrieval_baseline() -> None:
     fixture = _load_fixture()
     provider = get_embedding_provider()
     chunks = fixture["chunks"]
-    chunk_vectors = provider.embed_documents(
-        [chunk["content"] for chunk in chunks]
-    )
+    chunk_vectors = provider.embed_documents([chunk["content"] for chunk in chunks])
 
     misses: list[str] = []
     for case in fixture["cases"]:

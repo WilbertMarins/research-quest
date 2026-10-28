@@ -61,9 +61,7 @@ def test_get_task_returns_not_found() -> None:
 
 def test_list_tasks_applies_pagination() -> None:
     client, session, engine = create_test_client()
-    session.add_all(
-        [TaskRecord(question=f"Question {index}") for index in range(3)]
-    )
+    session.add_all([TaskRecord(question=f"Question {index}") for index in range(3)])
     session.commit()
 
     try:
