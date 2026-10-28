@@ -41,3 +41,10 @@ class TaskResponse(BaseModel):
     updated_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
+
+
+class TaskListResponse(BaseModel):
+    items: tuple[TaskResponse, ...]
+    limit: int
+    offset: int
+    has_more: bool

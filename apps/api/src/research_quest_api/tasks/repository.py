@@ -49,6 +49,20 @@ class TaskRepository:
     def get(self, task_id: UUID) -> TaskRecord | None:
         return self._session.get(TaskRecord, task_id)
 
+    def list_recent(
+        self,
+        *,
+        limit: int,
+        offset: int = 0,
+    ) -> tuple[TaskRecord, ...]:
+        statement = (
+            select(TaskRecord)
+            .order_by(TaskRecord.created_at.desc(), TaskRecord.id.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        return tuple(self._session.scalars(statement))
+
     def _resolve_document_ids(
         self,
         document_ids: Sequence[UUID] | None,
