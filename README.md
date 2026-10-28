@@ -8,7 +8,7 @@ Construir uma aplicação em que uma pessoa envia documentos e perguntas, um age
 
 ## Estado atual
 
-A fundação e a ingestão vertical estão implementadas: a API recebe TXT/MD, valida, deduplica, cria chunks e persiste embeddings locais no PostgreSQL/pgvector. Busca, agente, tarefas e interface integrada ainda serão implementados.
+A fundação, a ingestão vertical e o gerenciamento de tarefas estão implementados: a API recebe TXT/MD, persiste embeddings locais e cria, consulta e lista tarefas com uma fotografia dos documentos selecionados. Busca, agente e interface integrada ainda serão implementados.
 
 ## Stack do MVP
 
@@ -138,6 +138,27 @@ Erros públicos possíveis:
 O primeiro upload pode baixar o modelo configurado em `EMBEDDING_MODEL`. O MVP utiliza `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, vetores de 384 dimensões e PyTorch CPU-only. Trocar modelo ou dimensão exige reindexação explícita; não altere apenas `EMBEDDING_DIMENSION` em uma base existente.
 
 O contrato interativo fica disponível em `http://localhost:8000/docs`.
+
+## Tarefas de pesquisa
+
+Crie uma tarefa com uma pergunta e, opcionalmente, os UUIDs de documentos que já estejam em estado `completed`:
+
+```bash
+curl -X POST http://localhost:8000/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Quais são os principais pontos?","document_ids":[]}'
+```
+
+Quando `document_ids` for omitido ou estiver vazio, a API seleciona todos os documentos concluídos disponíveis naquele instante. Essa seleção é persistida na tarefa e não muda com uploads posteriores. A criação retorna HTTP `201` e estado `queued`; a execução do agente será conectada em uma etapa posterior.
+
+Consulte uma tarefa ou liste as mais recentes:
+
+```bash
+curl http://localhost:8000/api/tasks/UUID_DA_TAREFA
+curl "http://localhost:8000/api/tasks?limit=20&offset=0"
+```
+
+A listagem ordena da mais nova para a mais antiga, aceita `limit` entre 1 e 100 e informa `has_more`. Os estados públicos são `queued`, `running`, `waiting_for_tool`, `retrying`, `completed` e `failed`. ID inexistente retorna `404 task_not_found`; pergunta vazia ou seleção de documentos inválida retorna HTTP `422`.
 
 ## Migrações
 

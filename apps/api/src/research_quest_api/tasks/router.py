@@ -11,6 +11,7 @@ from research_quest_api.tasks.repository import (
 )
 from research_quest_api.tasks.schemas import (
     CreateTaskRequest,
+    TaskApiErrorResponse,
     TaskListResponse,
     TaskResponse,
 )
@@ -59,7 +60,12 @@ def create_task(
     "/{task_id}",
     response_model=TaskResponse,
     summary="Get a research task",
-    responses={404: {"description": "Task not found."}},
+    responses={
+        404: {
+            "description": "Task not found.",
+            "model": TaskApiErrorResponse,
+        }
+    },
 )
 def get_task(
     task_id: UUID,
