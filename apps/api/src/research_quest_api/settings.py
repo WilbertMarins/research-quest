@@ -18,6 +18,7 @@ class Settings(BaseSettings):
         "postgresql+psycopg://research_quest:research_quest@localhost:5432/"
         "research_quest"
     )
+    celery_broker_url: str = "amqp://research_quest:research_quest@localhost:5672//"
 
     groq_api_key: SecretStr | None = None
     groq_model: str = "openai/gpt-oss-20b"

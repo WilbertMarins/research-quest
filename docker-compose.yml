@@ -21,12 +21,31 @@ services:
       retries: 10
       start_period: 10s
 
+  rabbitmq:
+    image: rabbitmq:4.3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-research_quest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-research_quest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     environment:
       APP_ENV: development
+      CELERY_BROKER_URL: >-
+        amqp://${RABBITMQ_DEFAULT_USER:-research_quest}:${RABBITMQ_DEFAULT_PASS:-research_quest}@rabbitmq:5672//
       DATABASE_URL: >-
         postgresql+psycopg://${POSTGRES_USER:-research_quest}:${POSTGRES_PASSWORD:-research_quest}@postgres:5432/${POSTGRES_DB:-research_quest}
     ports:
@@ -46,6 +65,40 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command:
+      - celery
+      - -A
+      - research_quest_api.worker:celery_app
+      - worker
+      - --loglevel=INFO
+    environment:
+      APP_ENV: development
+      CELERY_BROKER_URL: >-
+        amqp://${RABBITMQ_DEFAULT_USER:-research_quest}:${RABBITMQ_DEFAULT_PASS:-research_quest}@rabbitmq:5672//
+      DATABASE_URL: >-
+        postgresql+psycopg://${POSTGRES_USER:-research_quest}:${POSTGRES_PASSWORD:-research_quest}@postgres:5432/${POSTGRES_DB:-research_quest}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-20b}
+    depends_on:
+      api:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          celery -A research_quest_api.worker:celery_app inspect ping
+          --timeout 5 --json
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
   web:
     build:
@@ -67,3 +120,4 @@ services:
 
 volumes:
   postgres-data:
+  rabbitmq-data:

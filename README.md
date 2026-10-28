@@ -76,7 +76,7 @@ Para subir PostgreSQL, API e frontend juntos, com os logs no terminal:
 make up
 ```
 
-A API fica disponível em `http://localhost:8000`, o frontend em `http://localhost:3000` e o PostgreSQL/pgvector em `localhost:5432`. Credenciais padrão são apenas locais e podem ser substituídas no `.env`.
+A API fica disponível em `http://localhost:8000`, o frontend em `http://localhost:3000`, o PostgreSQL/pgvector em `localhost:5432` e o painel local do RabbitMQ em `http://localhost:15672`. Credenciais padrão são apenas locais e podem ser substituídas no `.env`.
 
 O container da API aplica migrações pendentes antes de iniciar. Para executar em segundo plano ou encerrar os serviços sem remover os dados persistidos:
 
@@ -97,7 +97,7 @@ make migrate    # aplica as migrações pelo container da API
 make ci         # executa localmente as verificações da CI
 ```
 
-Os comandos `make up` e `make start` incluem os três serviços definidos no Compose: PostgreSQL, API e web.
+Os comandos `make up` e `make start` incluem PostgreSQL, RabbitMQ, API, worker Celery e web. O worker usa mensagens JSON, confirmação tardia e prefetch de uma tarefa por processo; o PostgreSQL continua sendo a fonte de verdade dos resultados.
 
 ## Desenvolvimento sem containers de aplicação
 
