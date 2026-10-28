@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from pathlib import PurePath
 
-
 SUPPORTED_MEDIA_TYPES = {
     ".md": frozenset({"text/markdown", "text/plain"}),
     ".txt": frozenset({"text/plain"}),
