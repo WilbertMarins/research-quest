@@ -8,7 +8,10 @@ from research_quest_api.agent.contracts import (
     AgentRunInput,
     SourceReference,
 )
+from research_quest_api.agent.generation import AnswerGenerator
+from research_quest_api.agent.prompts import build_grounded_messages
 from research_quest_api.agent.state import AgentState
+from research_quest_api.agent.validation import validate_generated_answer
 from research_quest_api.retrieval import ChunkRetriever
 
 INSUFFICIENT_EVIDENCE_MESSAGE = (
@@ -103,6 +106,27 @@ def finalize_fake_grounded(state: AgentState) -> AgentState:
     }
 
 
+def create_generate_answer_node(
+    generator: AnswerGenerator,
+) -> Callable[[AgentState], AgentState]:
+    def generate_answer(state: AgentState) -> AgentState:
+        messages = build_grounded_messages(
+            state["question"],
+            state.get("retrieved_chunks", ()),
+        )
+        return {**state, "raw_answer": generator.generate(messages)}
+
+    return generate_answer
+
+
+def validate_answer(state: AgentState) -> AgentState:
+    result = validate_generated_answer(
+        state["raw_answer"],
+        state.get("retrieved_chunks", ()),
+    )
+    return {**state, "result": result}
+
+
 def build_minimal_agent_graph() -> Any:
     builder = StateGraph(AgentState)
     builder.add_node("validate_input", validate_input)
@@ -152,6 +176,48 @@ def build_retrieval_agent_graph(
     return builder.compile()
 
 
+def build_grounded_agent_graph(
+    retriever: ChunkRetriever,
+    generator: AnswerGenerator,
+    *,
+    top_k: int = 5,
+    min_score: float = 0.25,
+) -> Any:
+    if top_k <= 0:
+        raise ValueError("top_k must be greater than zero")
+    if not -1.0 <= min_score <= 1.0:
+        raise ValueError("min_score must be between -1 and 1")
+
+    builder = StateGraph(AgentState)
+    builder.add_node("validate_input", validate_input)
+    builder.add_node(
+        "retrieve_context",
+        create_retrieve_context_node(retriever, top_k=top_k),
+    )
+    builder.add_node(
+        "assess_evidence",
+        create_assess_evidence_node(min_score=min_score),
+    )
+    builder.add_node("generate_answer", create_generate_answer_node(generator))
+    builder.add_node("validate_answer", validate_answer)
+    builder.add_node("finalize_insufficient", finalize_without_evidence)
+    builder.add_edge(START, "validate_input")
+    builder.add_edge("validate_input", "retrieve_context")
+    builder.add_edge("retrieve_context", "assess_evidence")
+    builder.add_conditional_edges(
+        "assess_evidence",
+        route_after_evidence,
+        {
+            "grounded": "generate_answer",
+            "insufficient": "finalize_insufficient",
+        },
+    )
+    builder.add_edge("generate_answer", "validate_answer")
+    builder.add_edge("validate_answer", END)
+    builder.add_edge("finalize_insufficient", END)
+    return builder.compile()
+
+
 def run_minimal_agent(run_input: AgentRunInput) -> AgentResult:
     graph = build_minimal_agent_graph()
     final_state = graph.invoke(
@@ -170,6 +236,27 @@ def run_retrieval_agent(
 ) -> AgentResult:
     graph = build_retrieval_agent_graph(
         retriever,
+        top_k=top_k,
+        min_score=min_score,
+    )
+    final_state = graph.invoke(
+        cast(AgentState, run_input.model_dump()),
+        config={"recursion_limit": 8},
+    )
+    return cast(AgentResult, final_state["result"])
+
+
+def run_grounded_agent(
+    run_input: AgentRunInput,
+    *,
+    retriever: ChunkRetriever,
+    generator: AnswerGenerator,
+    top_k: int = 5,
+    min_score: float = 0.25,
+) -> AgentResult:
+    graph = build_grounded_agent_graph(
+        retriever,
+        generator,
         top_k=top_k,
         min_score=min_score,
     )

@@ -11,6 +11,7 @@ class AgentState(TypedDict):
     document_ids: tuple[UUID, ...]
     retrieved_chunks: NotRequired[tuple[RetrievedChunk, ...]]
     sufficient_evidence: NotRequired[bool]
+    raw_answer: NotRequired[str]
     result: NotRequired[AgentResult]
     error: NotRequired[str | None]
     run_metadata: NotRequired[dict[str, object]]

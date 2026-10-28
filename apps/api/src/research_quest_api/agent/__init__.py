@@ -4,8 +4,10 @@ from research_quest_api.agent.contracts import (
     SourceReference,
 )
 from research_quest_api.agent.graph import (
+    build_grounded_agent_graph,
     build_minimal_agent_graph,
     build_retrieval_agent_graph,
+    run_grounded_agent,
     run_minimal_agent,
     run_retrieval_agent,
 )
@@ -16,9 +18,11 @@ __all__ = [
     "AgentRunInput",
     "PromptMessage",
     "SourceReference",
+    "build_grounded_agent_graph",
     "build_minimal_agent_graph",
     "build_retrieval_agent_graph",
     "build_grounded_messages",
+    "run_grounded_agent",
     "run_minimal_agent",
     "run_retrieval_agent",
 ]
