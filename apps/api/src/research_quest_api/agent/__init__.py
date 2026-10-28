@@ -3,6 +3,7 @@ from research_quest_api.agent.contracts import (
     AgentRunInput,
     SourceReference,
 )
+from research_quest_api.agent.execution import AgentTaskExecutor
 from research_quest_api.agent.graph import (
     build_grounded_agent_graph,
     build_minimal_agent_graph,
@@ -16,6 +17,7 @@ from research_quest_api.agent.prompts import build_grounded_messages, PromptMess
 __all__ = [
     "AgentResult",
     "AgentRunInput",
+    "AgentTaskExecutor",
     "PromptMessage",
     "SourceReference",
     "build_grounded_agent_graph",
