@@ -1,0 +1,38 @@
+{
+  "chunks": [
+    {
+      "id": "mars",
+      "content": "Marte é chamado de planeta vermelho por causa do óxido de ferro presente em sua superfície."
+    },
+    {
+      "id": "photosynthesis",
+      "content": "Na fotossíntese, as plantas usam luz solar, água e dióxido de carbono para produzir glicose e oxigênio."
+    },
+    {
+      "id": "python",
+      "content": "Python é uma linguagem de programação conhecida por sua sintaxe legível e pelo amplo ecossistema de bibliotecas."
+    },
+    {
+      "id": "amazon-river",
+      "content": "O rio Amazonas possui a maior vazão de água do mundo e atravessa a floresta amazônica."
+    },
+    {
+      "id": "volcanoes",
+      "content": "Vulcões liberam lava, cinzas e gases quando o magma alcança a superfície terrestre."
+    }
+  ],
+  "cases": [
+    {
+      "query": "Por que Marte tem a cor vermelha?",
+      "expected_chunk_id": "mars"
+    },
+    {
+      "query": "Como as plantas transformam luz em energia?",
+      "expected_chunk_id": "photosynthesis"
+    },
+    {
+      "query": "Qual linguagem de programação se destaca pela legibilidade?",
+      "expected_chunk_id": "python"
+    }
+  ]
+}

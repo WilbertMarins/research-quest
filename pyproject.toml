@@ -37,6 +37,7 @@ pythonpath = ["apps/api/src"]
 testpaths = ["tests"]
 markers = [
     "integration: requires external infrastructure such as PostgreSQL",
+    "evaluation: loads the configured embedding model for quality checks",
 ]
 
 [tool.ruff]

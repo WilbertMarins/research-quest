@@ -225,6 +225,14 @@ cd apps/web && npm test
 
 Até que haja uma execução manual registrada, o estado da suíte deve ser considerado **não executado**, nunca aprovado implicitamente.
 
+A baseline de recuperação vetorial é opt-in porque carrega o modelo local configurado e pode baixá-lo na primeira execução. Para avaliá-la manualmente:
+
+```bash
+uv run pytest -m evaluation tests/evaluation
+```
+
+O corpus inicial em português verifica se o trecho esperado aparece entre os dois primeiros resultados. Essa avaliação também não faz parte da CI e não foi executada automaticamente.
+
 ## Política de trabalho
 
 - Preferir commits lógicos com **500 linhas alteradas ou menos**.
