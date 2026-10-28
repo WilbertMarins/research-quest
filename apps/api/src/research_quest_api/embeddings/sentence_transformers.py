@@ -49,6 +49,10 @@ class SentenceTransformerEmbeddingProvider:
 
         return vectors
 
+    def embed_query(self, text: str) -> list[float]:
+        vectors = self.embed_documents([text])
+        return vectors[0]
+
     def _get_model(self) -> _SentenceTransformerModel:
         if self._model is None:
             model = self._model_factory(self.model_name)

@@ -30,6 +30,12 @@ def test_fake_embeddings_accept_an_empty_batch() -> None:
     assert provider.embed_documents([]) == []
 
 
+def test_fake_query_embedding_matches_document_embedding() -> None:
+    provider = DeterministicEmbeddingProvider(dimension=8)
+
+    assert provider.embed_query("pesquisa") == provider.embed_documents(["pesquisa"])[0]
+
+
 def test_fake_embeddings_reject_invalid_dimension() -> None:
     with pytest.raises(ValueError, match="dimension"):
         DeterministicEmbeddingProvider(dimension=0)

@@ -50,6 +50,18 @@ def test_sentence_transformer_provider_loads_model_lazily() -> None:
     assert model.received_texts == ["um", "dois"]
 
 
+def test_sentence_transformer_provider_embeds_query() -> None:
+    model = StubSentenceTransformer(dimension=3)
+    provider = SentenceTransformerEmbeddingProvider(
+        model_name="local-model",
+        expected_dimension=3,
+        model_factory=lambda _: model,
+    )
+
+    assert provider.embed_query("pergunta") == [0.5, 0.5, 0.5]
+    assert model.received_texts == ["pergunta"]
+
+
 def test_sentence_transformer_provider_rejects_model_dimension_mismatch() -> None:
     provider = SentenceTransformerEmbeddingProvider(
         model_name="wrong-model",

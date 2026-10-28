@@ -19,6 +19,9 @@ class DeterministicEmbeddingProvider:
     def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         return [self._embed_text(text) for text in texts]
 
+    def embed_query(self, text: str) -> list[float]:
+        return self._embed_text(text)
+
     def _embed_text(self, text: str) -> list[float]:
         digest = sha256(text.encode("utf-8")).digest()
         values = [
