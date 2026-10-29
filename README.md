@@ -1,5 +1,11 @@
 # Research Quest — MVP orientado a especificações
 
+<p align="center">
+  <img src="apps/web/public/research-quest-logo.png" alt="Logo do Research Quest" width="320">
+</p>
+
+> Identidade visual do projeto, planejada para também se tornar o ícone da interface web.
+
 Especificações de produto e implementação para a PoC **Research Quest**.
 
 ## Objetivo
