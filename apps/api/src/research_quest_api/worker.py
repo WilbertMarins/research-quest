@@ -1,8 +1,12 @@
 from collections.abc import Callable
+from dataclasses import dataclass
+from math import ceil
+from random import uniform
 from typing import Protocol
 from uuid import UUID, uuid4
 
 from celery import Celery
+from groq import APIConnectionError, InternalServerError, RateLimitError
 from sqlalchemy.orm import Session
 
 from research_quest_api.agent import AgentResult, AgentTaskExecutor
@@ -13,6 +17,27 @@ from research_quest_api.retrieval import VectorSearch
 from research_quest_api.settings import Settings, get_settings
 from research_quest_api.tasks.dispatch import EXECUTE_TASK_NAME
 from research_quest_api.tasks.repository import TaskRepository
+
+TRANSIENT_PROVIDER_ERRORS = (
+    APIConnectionError,
+    InternalServerError,
+    RateLimitError,
+)
+
+
+class TaskExecutionFailedError(RuntimeError):
+    pass
+
+
+class TransientProviderError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class RetryDecision:
+    should_retry: bool
+    attempt_count: int
+    max_attempts: int
 
 
 class AgentExecutor(Protocol):
@@ -87,6 +112,61 @@ def record_task_failure(
         session.commit()
 
 
+def record_transient_failure(
+    task_id: UUID,
+    *,
+    session_factory: Callable[[], Session] = SessionLocal,
+) -> RetryDecision:
+    with session_factory() as session:
+        repository = TaskRepository(session)
+        task = repository.mark_retrying(
+            task_id,
+            error_code="provider_temporarily_unavailable",
+            error_message="The answer provider is temporarily unavailable.",
+        )
+        should_retry = task.attempt_count < task.max_attempts
+        if not should_retry:
+            repository.fail(
+                task_id,
+                error_code="retry_limit_exceeded",
+                error_message="The research task exhausted its retry limit.",
+            )
+        decision = RetryDecision(
+            should_retry=should_retry,
+            attempt_count=task.attempt_count,
+            max_attempts=task.max_attempts,
+        )
+        session.commit()
+        return decision
+
+
+def retry_after_seconds(error: Exception) -> int | None:
+    response = getattr(error, "response", None)
+    headers = getattr(response, "headers", None)
+    raw_value = headers.get("retry-after") if headers is not None else None
+    if raw_value is None:
+        return None
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        return None
+    if value < 0:
+        return None
+    return max(1, ceil(value))
+
+
+def calculate_retry_delay(
+    attempt_count: int,
+    *,
+    retry_after: int | None = None,
+    jitter: Callable[[float, float], float] = uniform,
+) -> int:
+    if retry_after is not None:
+        return retry_after
+    base_delay = min(2 ** max(attempt_count - 1, 0), 60)
+    return ceil(base_delay + jitter(0, base_delay))
+
+
 @celery_app.task(bind=True, name=EXECUTE_TASK_NAME)
 def execute_research_task(self: object, task_id: str) -> dict[str, object]:
     request = getattr(self, "request")
@@ -94,7 +174,27 @@ def execute_research_task(self: object, task_id: str) -> dict[str, object]:
     parsed_task_id = UUID(task_id)
     try:
         result = run_agent_task(parsed_task_id, trace_id=trace_id)
+    except TRANSIENT_PROVIDER_ERRORS as error:
+        decision = record_transient_failure(parsed_task_id)
+        if decision.should_retry:
+            countdown = calculate_retry_delay(
+                decision.attempt_count,
+                retry_after=retry_after_seconds(error),
+            )
+            retry = getattr(self, "retry")
+            raise retry(
+                exc=TransientProviderError(
+                    "The answer provider is temporarily unavailable."
+                ),
+                countdown=countdown,
+                max_retries=decision.max_attempts - 1,
+            )
+        raise TaskExecutionFailedError(
+            "The research task exhausted its retry limit."
+        ) from None
     except Exception:
         record_task_failure(parsed_task_id)
-        raise
+        raise TaskExecutionFailedError(
+            "The research task could not be completed."
+        ) from None
     return result.model_dump(mode="json")

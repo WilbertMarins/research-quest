@@ -105,6 +105,8 @@ make ci         # executa localmente as verificações da CI
 
 Os comandos `make up` e `make start` incluem PostgreSQL, RabbitMQ, API, worker Celery e web. O worker usa mensagens JSON, confirmação tardia e prefetch de uma tarefa por processo; o PostgreSQL continua sendo a fonte de verdade dos resultados.
 
+O worker repete somente falhas transitórias conhecidas do provedor Groq: conexão, timeout, limite de requisições e erros internos. A política usa no máximo três tentativas por tarefa, backoff exponencial com jitter e respeita `Retry-After` numérico quando fornecido. Erros permanentes falham imediatamente com uma mensagem pública sanitizada.
+
 ## Desenvolvimento sem containers de aplicação
 
 Mantenha o PostgreSQL disponível e inicie a API na raiz:
