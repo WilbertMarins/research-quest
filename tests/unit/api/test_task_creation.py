@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from hashlib import sha256
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -9,6 +10,15 @@ from sqlalchemy.pool import StaticPool
 from research_quest_api.database import Base, get_session
 from research_quest_api.main import app
 from research_quest_api.models import Document, DocumentStatus
+from research_quest_api.tasks.dispatch import get_task_dispatcher
+
+
+class RecordingDispatcher:
+    def __init__(self) -> None:
+        self.task_ids: list[UUID] = []
+
+    def dispatch(self, task_id: UUID) -> None:
+        self.task_ids.append(task_id)
 
 
 def test_create_task_snapshots_selected_document() -> None:
@@ -34,7 +44,9 @@ def test_create_task_snapshots_selected_document() -> None:
     def override_session() -> Iterator[Session]:
         yield session
 
+    dispatcher = RecordingDispatcher()
     app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_task_dispatcher] = lambda: dispatcher
     try:
         response = TestClient(app).post(
             "/api/tasks",
@@ -52,6 +64,7 @@ def test_create_task_snapshots_selected_document() -> None:
     assert response.json()["question"] == "What does the document say?"
     assert response.json()["status"] == "queued"
     assert response.json()["document_ids"] == [str(document.id)]
+    assert dispatcher.task_ids == [UUID(response.json()["id"])]
 
 
 def test_create_task_rejects_empty_question() -> None:

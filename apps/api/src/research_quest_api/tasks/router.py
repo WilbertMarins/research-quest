@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from research_quest_api.database import get_session
+from research_quest_api.tasks.dispatch import TaskDispatcher, get_task_dispatcher
 from research_quest_api.tasks.repository import (
     DocumentSelectionError,
     TaskRepository,
@@ -25,8 +26,8 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
     status_code=status.HTTP_201_CREATED,
     summary="Create a research task",
     description=(
-        "Creates a queued task and snapshots the selected completed documents. "
-        "Agent execution is performed by a later workflow."
+        "Creates a queued task, snapshots the selected completed documents, and "
+        "publishes its identifier for background execution."
     ),
     responses={
         422: {
@@ -37,6 +38,7 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 def create_task(
     request: CreateTaskRequest,
     session: Annotated[Session, Depends(get_session)],
+    dispatcher: Annotated[TaskDispatcher, Depends(get_task_dispatcher)],
 ) -> TaskResponse:
     try:
         task = TaskRepository(session).create(
@@ -53,6 +55,16 @@ def create_task(
         ) from error
 
     session.commit()
+    try:
+        dispatcher.dispatch(task.id)
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "task_queue_unavailable",
+                "message": "Task was saved but could not be queued for execution.",
+            },
+        ) from error
     return TaskResponse.model_validate(task)
 
 
