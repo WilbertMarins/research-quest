@@ -85,6 +85,33 @@ class TaskRepository:
         self._session.flush()
         return record
 
+    def mark_retrying(
+        self,
+        task_id: UUID,
+        *,
+        error_code: str,
+        error_message: str,
+    ) -> TaskRecord:
+        record = self._get_for_update(task_id)
+        self._transition(record, TaskStatus.RETRYING)
+        self._set_error(record, error_code=error_code, error_message=error_message)
+        self._session.flush()
+        return record
+
+    def fail(
+        self,
+        task_id: UUID,
+        *,
+        error_code: str,
+        error_message: str,
+    ) -> TaskRecord:
+        record = self._get_for_update(task_id)
+        self._transition(record, TaskStatus.FAILED)
+        record.result = None
+        self._set_error(record, error_code=error_code, error_message=error_message)
+        self._session.flush()
+        return record
+
     def list_recent(
         self,
         *,
@@ -127,6 +154,20 @@ class TaskRepository:
         if record is None:
             raise TaskNotFoundError(f"Task {task_id} was not found.")
         return record
+
+    @staticmethod
+    def _set_error(
+        record: TaskRecord,
+        *,
+        error_code: str,
+        error_message: str,
+    ) -> None:
+        if not error_code or len(error_code) > 64:
+            raise ValueError("error_code must contain between 1 and 64 characters")
+        if not error_message or len(error_message) > 500:
+            raise ValueError("error_message must contain between 1 and 500 characters")
+        record.error_code = error_code
+        record.error_message = error_message
 
     @staticmethod
     def _transition(record: TaskRecord, target: TaskStatus) -> None:

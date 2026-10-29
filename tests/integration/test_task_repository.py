@@ -51,3 +51,40 @@ def test_task_repository_snapshots_only_completed_documents() -> None:
 
         session.close()
         transaction.rollback()
+
+
+@pytest.mark.integration
+def test_task_repository_persists_retry_and_failure_states() -> None:
+    engine = create_database_engine()
+
+    with engine.connect() as connection:
+        transaction = connection.begin()
+        session = Session(bind=connection)
+        repository = TaskRepository(session)
+        task = repository.create(question="Will this retry?", document_ids=None)
+
+        repository.start(task.id, trace_id="first-attempt")
+        repository.mark_retrying(
+            task.id,
+            error_code="provider_unavailable",
+            error_message="The answer provider is temporarily unavailable.",
+        )
+
+        assert task.status is TaskStatus.RETRYING
+        assert task.attempt_count == 1
+        assert task.finished_at is None
+
+        repository.start(task.id, trace_id="second-attempt")
+        repository.fail(
+            task.id,
+            error_code="agent_execution_failed",
+            error_message="The research task could not be completed.",
+        )
+
+        assert task.status is TaskStatus.FAILED
+        assert task.attempt_count == 2
+        assert task.finished_at is not None
+        assert task.error_code == "agent_execution_failed"
+
+        session.close()
+        transaction.rollback()

@@ -12,6 +12,7 @@ from research_quest_api.embeddings.dependencies import get_embedding_provider
 from research_quest_api.retrieval import VectorSearch
 from research_quest_api.settings import Settings, get_settings
 from research_quest_api.tasks.dispatch import EXECUTE_TASK_NAME
+from research_quest_api.tasks.repository import TaskRepository
 
 
 class AgentExecutor(Protocol):
@@ -72,9 +73,28 @@ def run_agent_task(
         return executor_factory(session).execute(task_id, trace_id=trace_id)
 
 
+def record_task_failure(
+    task_id: UUID,
+    *,
+    session_factory: Callable[[], Session] = SessionLocal,
+) -> None:
+    with session_factory() as session:
+        TaskRepository(session).fail(
+            task_id,
+            error_code="agent_execution_failed",
+            error_message="The research task could not be completed.",
+        )
+        session.commit()
+
+
 @celery_app.task(bind=True, name=EXECUTE_TASK_NAME)
 def execute_research_task(self: object, task_id: str) -> dict[str, object]:
     request = getattr(self, "request")
     trace_id = str(getattr(request, "id", None) or uuid4())
-    result = run_agent_task(UUID(task_id), trace_id=trace_id)
+    parsed_task_id = UUID(task_id)
+    try:
+        result = run_agent_task(parsed_task_id, trace_id=trace_id)
+    except Exception:
+        record_task_failure(parsed_task_id)
+        raise
     return result.model_dump(mode="json")
