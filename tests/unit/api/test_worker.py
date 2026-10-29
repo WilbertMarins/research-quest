@@ -1,5 +1,23 @@
+from uuid import UUID, uuid4
+
+from sqlalchemy.orm import Session
+
+from research_quest_api.agent import AgentResult
 from research_quest_api.settings import Settings
-from research_quest_api.worker import create_celery_app
+from research_quest_api.tasks.dispatch import EXECUTE_TASK_NAME
+from research_quest_api.worker import celery_app, create_celery_app, run_agent_task
+
+
+class RecordingExecutor:
+    def __init__(self) -> None:
+        self.calls: list[tuple[UUID, str]] = []
+
+    def execute(self, task_id: UUID, *, trace_id: str) -> AgentResult:
+        self.calls.append((task_id, trace_id))
+        return AgentResult(
+            answer="Evidence was insufficient.",
+            insufficient_evidence=True,
+        )
 
 
 def test_celery_app_uses_rabbitmq_and_safe_serializers() -> None:
@@ -17,3 +35,22 @@ def test_celery_app_uses_rabbitmq_and_safe_serializers() -> None:
     assert app.conf.result_backend is None
     assert app.conf.task_acks_late is True
     assert app.conf.worker_prefetch_multiplier == 1
+
+
+def test_worker_registers_research_task() -> None:
+    assert EXECUTE_TASK_NAME in celery_app.tasks
+
+
+def test_run_agent_task_executes_with_task_and_trace_identifiers() -> None:
+    executor = RecordingExecutor()
+    task_id = uuid4()
+
+    result = run_agent_task(
+        task_id,
+        trace_id="celery-message-id",
+        session_factory=Session,
+        executor_factory=lambda session: executor,
+    )
+
+    assert result.insufficient_evidence is True
+    assert executor.calls == [(task_id, "celery-message-id")]
